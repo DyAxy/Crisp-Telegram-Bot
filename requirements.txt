@@ -1,0 +1,5 @@
+crisp_api==1.1.19
+python-socketio[asyncio_client]==5.11.2
+python-telegram-bot[all]==21.0.1
+PyYAML==6.0.1
+Requests==2.31.0
