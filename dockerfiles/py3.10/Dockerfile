@@ -9,7 +9,7 @@ RUN apk del .build-deps
 
 FROM python:3.10-alpine
 COPY --from=build /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
-ADD / /Crisp_Telegram_Bot
-WORKDIR /Crisp_Telegram_Bot
+ADD / /Crisp-Telegram-Bot
+WORKDIR /Crisp-Telegram-Bot
 ENTRYPOINT [ "./docker-entrypoint.sh" ]
 CMD ["python3","bot.py"]
