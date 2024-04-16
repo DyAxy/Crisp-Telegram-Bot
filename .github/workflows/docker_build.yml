@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - "master"
+    paths-ignore:
+      - "**/README.md"
+      - "**/LICENSE"
+      - "**/docker-compose.yml.example"
+      - "**/config.yml.example"
+      - "**/.dockerignore"
+      - "**/.gitignore"
 
 jobs:
   docker:
