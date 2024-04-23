@@ -3,6 +3,6 @@
 .github/
 Dockerfile
 .dockerignore
-Dockerized/
+dockerfiles/
 *.example
 docker-compose.yml
