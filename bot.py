@@ -39,20 +39,23 @@ except Exception as error:
 
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
-    website_id = config['crisp']['website']
-    if msg.reply_to_message.text is not None:
-        session_id = re.search(
-            'session_\w{8}(-\w{4}){3}-\w{12}', msg.reply_to_message.text).group()
-    elif msg.reply_to_message.caption is not None:
-        session_id = re.search(
-            'session_\w{8}(-\w{4}){3}-\w{12}', msg.reply_to_message.caption).group()
-    query = {
-        "type": "text",
-        "content": msg.text,
-        "from": "operator",
-        "origin": "chat"
-    }
-    client.website.send_message_in_conversation(website_id, session_id, query)
+
+    if msg.chat_id != config['bot']['groupId']:
+        return
+    for sessionId in context.bot_data:
+        if context.bot_data[sessionId]['topicId'] == msg.message_thread_id:
+            query = {
+                "type": "text",
+                "content": msg.text,
+                "from": "operator",
+                "origin": "chat"
+            }
+            client.website.send_message_in_conversation(
+                config['crisp']['website'],
+                sessionId,
+                query
+            )
+            return
 
 def main():
     try:
@@ -60,7 +63,7 @@ def main():
         # 启动 Bot
         if os.getenv('RUNNER_NAME') is not None:
             return
-        app.add_handler(MessageHandler(filters.REPLY & filters.TEXT, onReply))
+        app.add_handler(MessageHandler(filters.TEXT, onReply))
         app.job_queue.run_once(handler.exec,5,name='RTM')
         app.run_polling(drop_pending_updates=True)
     except Exception as error:

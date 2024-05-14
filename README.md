@@ -8,8 +8,7 @@ Python 版本需求 >= 3.9
 ## 现有功能
 - 基于Crisp客服系统
 - 自动推送文字、图片到指定聊天
-- 自动基于关键词回复对应内容
-- 支持回复后推送回对应客户
+- 基于Telegram话题群将消息分栏
 
 ## 计划功能
 - 回复图片功能（需要Crisp订阅）
@@ -37,6 +36,12 @@ python3 bot.py
 2. 输入 `/newbot`，并为你的bot起一个**响亮**的名字
 3. 接着为你的bot设置一个username，但是一定要以bot结尾，例如：`v2board_bot`
 4. 最后你就能得到bot的token了，看起来应该像这样：`123456789:gaefadklwdqojdoiqwjdiwqdo`
+
+## 创建 Telegram Topic 群
+
+1. 创建一个群聊，并将申请的 Bot 拉进去
+2. 在管理群中，打开话题 (Topic)，并将 Bot 设为管理员
+3. 将 # 的话题设为置顶 (Pin)
 
 ## 申请 Crisp 以及 MarketPlace 插件
 

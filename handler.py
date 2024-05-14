@@ -1,26 +1,19 @@
+
 import bot
 import json
 import base64
 import socketio
 import requests
 from telegram.ext import ContextTypes
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 config = bot.config
 client = bot.client
-website_id = config["crisp"]["website"]
+groupId = config["bot"]["groupId"]
+websiteId = config["crisp"]["website"]
 
-def getKey(content: str):
-    if len(config["autoreply"]) > 0:
-        for x in config["autoreply"]:
-            keyword = x.split("|")
-            for key in keyword:
-                if key in content:
-                    return True, config["autoreply"][x]
-    return False, ""
-
-async def sendTextMessage(message):
-    session_id = message["session_id"]
-    metas = client.website.get_conversation_metas(website_id, session_id)
+def getMetas(sessionId):
+    metas = client.website.get_conversation_metas(websiteId, sessionId)
 
     flow = ['📠<b>Crisp消息推送</b>','']
     if len(metas["email"]) > 0:
@@ -34,52 +27,59 @@ async def sendTextMessage(message):
             UsedTraffic = metas["data"]["UsedTraffic"]
             AllTraffic = metas["data"]["AllTraffic"]
             flow.append(f"🗒<b>流量信息</b>：{UsedTraffic} / {AllTraffic}")
+    if len(flow) > 2:
+        return '\n'.join(flow)
+    return '无额外信息'
 
-    flow.append(f"🧾<b>消息内容</b>：{message['content']}")
-    result, autoreply = getKey(message["content"])
-    if result is True:
-        flow.append("")
-        flow.append(f"💡<b>自动回复</b>：{autoreply}")
-        query = {
-            "type": "text",
-            "content": autoreply,
-            "from": "operator",
-            "origin": "chat",
+async def createSession(data):
+    bot = callbackContext.bot
+    botData = callbackContext.bot_data
+    sessionId = data["session_id"]
+    session = botData.get(sessionId)
+
+    metas = getMetas(sessionId)
+    if session is None:
+        topic = await bot.create_forum_topic(
+            groupId,data["user"]["nickname"])
+        msg = await bot.send_message(
+            groupId,
+            metas,
+            message_thread_id=topic.message_thread_id
+            )
+        botData[sessionId] = {
+            'topicId': topic.message_thread_id,
+            'messageId': msg.message_id,
         }
-        client.website.send_message_in_conversation(website_id, session_id, query)
-    
-    flow.append("")
-    flow.append(f"🧷<b>Session</b>：<tg-spoiler>{session_id}</tg-spoiler>")
-    
-    text = '\n'.join(flow)
-    for send_id in config["bot"]["send_id"]:
-        await callbackContext.bot.send_message(
-            chat_id=send_id, text=text)
-    client.website.mark_messages_read_in_conversation(
-        website_id,
-        session_id,
-        {"from": "user", "origin": "chat", "fingerprints": [message["fingerprint"]]},
+    else:
+        await bot.edit_message_text('加载中',groupId,session['messageId'])
+        await bot.edit_message_text(metas,groupId,session['messageId'])
+
+async def sendMessage(data):
+    bot = callbackContext.bot
+    botData = callbackContext.bot_data
+    sessionId = data["session_id"]
+    session = botData.get(sessionId)
+
+    client.website.mark_messages_read_in_conversation(websiteId,sessionId,
+        {"from": "user", "origin": "chat", "fingerprints": [data["fingerprint"]]}
     )
 
-async def sendImageMessage(message):
-    session_id = message["session_id"]
-
-    flow = ['📠<b>Crisp消息推送</b>','']
-    flow.append("")
-    flow.append(f"🧷<b>Session</b>：<tg-spoiler>{session_id}</tg-spoiler>")
-    text = '\n'.join(flow)
-
-    for send_id in config["bot"]["send_id"]:
-        await callbackContext.bot.send_photo(
-            chat_id=send_id,
-            photo=message["content"]["url"],
-            caption=text
+    if data["type"] == "text":
+        flow = ['📠<b>消息推送</b>','']
+        flow.append(f"🧾<b>消息内容</b>：{data['content']}")
+        await bot.send_message(
+            groupId,
+            '\n'.join(flow),
+            message_thread_id=session["topicId"]
         )
-    client.website.mark_messages_read_in_conversation(
-        website_id,
-        session_id,
-        {"from": "user", "origin": "chat", "fingerprints": [message["fingerprint"]]},
-    )
+    elif data["type"] == "file" and str(data["content"]["type"]).count("image") > 0:
+        await bot.send_photo(
+            groupId,
+            data["content"]["url"],
+            message_thread_id=session["topicId"]
+        )
+    else:
+        print("Unhandled Message Type : ", data["type"])
 
 sio = socketio.AsyncClient(reconnection_attempts=5, logger=True)
 # Def Event Handlers
@@ -104,15 +104,10 @@ async def disconnect():
     print("Disconnected from server.")
 @sio.on("message:send")
 async def messageForward(data):
-    try:
-        if data["type"] == "text":
-            await sendTextMessage(data)
-        elif data["type"] == "file" and str(data["content"]["type"]).count("image") > 0:
-            await sendImageMessage(data)
-        else:
-            print("Unhandled Message Type : ", data["type"])
-    except Exception as err:
-        print(err)
+    if data["website_id"] != websiteId:
+        return
+    await createSession(data)
+    await sendMessage(data)
 
 # Meow!
 def getCrispConnectEndpoints():
@@ -126,17 +121,15 @@ def getCrispConnectEndpoints():
     response = requests.request("GET", url, headers=headers, data=payload)
     endPoint = json.loads(response.text).get("data").get("socket").get("app")
     return endPoint
+
 # Connecting to Crisp RTM(WSS) Server
-async def start_server():
+async def exec(context: ContextTypes.DEFAULT_TYPE):
+    global callbackContext
+    callbackContext = context
+    # await sendAllUnread()
     await sio.connect(
         getCrispConnectEndpoints(),
         transports="websocket",
         wait_timeout=10,
     )
     await sio.wait()
-    
-async def exec(context: ContextTypes.DEFAULT_TYPE):
-    global callbackContext
-    callbackContext = context
-    # await sendAllUnread()
-    await start_server()
