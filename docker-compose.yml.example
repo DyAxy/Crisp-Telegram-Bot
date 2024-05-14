@@ -7,13 +7,10 @@ services:
     environment:
       TZ: Asia/Shanghai
       BOT_TOKEN: 12345:abcdefghijklm
-      BOT_SEND_ID: -123456,654321
+      BOT_GROUPID: -123456
       CRISP_ID: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
       CRISP_KEY: aaaaaaaaaaaaaa11111111aaaaaaaaaaaaaaaaaa
       CRISP_WEBSITE: bbbbbbbb-bbbbb-bbbb-bbbb-bbbbbbbbbbbb
-      AUTOREPLY: |
-        \0  '在吗|你好' : '欢迎使用客服系统，请等待客服回复你~'
-        \0  '关键字1|关键字2' : '自动应答语A'
     networks:
       - network
 
