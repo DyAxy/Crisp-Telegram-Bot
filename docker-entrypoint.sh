@@ -9,11 +9,12 @@
 #     done
 #     result=`echo -e "${str}"`
 # }
-# AUTOREPLY=`echo -e "${AUTOREPLY}"`
+AUTOREPLY=`echo -e "${AUTOREPLY}"`
+OPENAI_PAYLOAD=`echo -e "${OPENAI_PAYLOAD}"`
 
-if [ ! -e "/Crisp-Telegram-Bot/config.yml" ]; then
-    # conver_to_array ${BOT_SEND_ID}
-    cat > /Crisp-Telegram-Bot/config.yml << EOF
+# if [ ! -e "/Crisp-Telegram-Bot/config.yml" ]; then
+# conver_to_array ${BOT_SEND_ID}
+cat > /Crisp-Telegram-Bot/config.yml << EOF
 bot:
   token: ${BOT_TOKEN}
   groupId: ${BOT_GROUPID}
@@ -21,6 +22,12 @@ crisp:
   id: ${CRISP_ID}
   key: ${CRISP_KEY}
   website: ${CRISP_WEBSITE}
+autoreply:
+${AUTOREPLY}
+openai:
+  apiKey: ${OPENAI_APIKEY}
+  payload: |
+${OPENAI_PAYLOAD}
 EOF
-fi
+# fi
 exec "$@"

@@ -6,3 +6,4 @@ Dockerfile
 dockerfiles/
 *.example
 docker-compose.yml
+config.yml
