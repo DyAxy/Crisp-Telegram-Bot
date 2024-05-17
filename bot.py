@@ -1,9 +1,9 @@
 
-import re
 import os
 import yaml
 import logging
 
+from openai import OpenAI
 from crisp_api import Crisp
 from telegram import Update
 from telegram.ext import Application, Defaults, MessageHandler, filters, ContextTypes
@@ -37,6 +37,14 @@ except Exception as error:
     logging.warning('无法连接 Crisp 服务，请确认 Crisp 配置项是否正确')
     exit(1)
 
+# Connect OpenAI
+try:
+    openai = OpenAI(api_key=config['openai']['apiKey'])
+    openai.models.list()
+except Exception as error:
+    logging.warning('无法连接 OpenAI 服务，智能化回复将不会使用')
+    openai = None
+
 async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     msg = update.effective_message
 
@@ -48,7 +56,11 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 "type": "text",
                 "content": msg.text,
                 "from": "operator",
-                "origin": "chat"
+                "origin": "chat",
+                "user": {
+                    "nickname": '人工客服',
+                    "avatar": 'https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg'
+                }
             }
             client.website.send_message_in_conversation(
                 config['crisp']['website'],

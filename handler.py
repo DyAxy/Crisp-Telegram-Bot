@@ -9,8 +9,19 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 config = bot.config
 client = bot.client
+openai = bot.openai
 groupId = config["bot"]["groupId"]
 websiteId = config["crisp"]["website"]
+payload = config["openai"]["payload"]
+
+def getKey(content: str):
+    if len(config["autoreply"]) > 0:
+        for x in config["autoreply"]:
+            keyword = x.split("|")
+            for key in keyword:
+                if key in content:
+                    return True, config["autoreply"][x]
+    return False, None
 
 def getMetas(sessionId):
     metas = client.website.get_conversation_metas(websiteId, sessionId)
@@ -67,6 +78,35 @@ async def sendMessage(data):
     if data["type"] == "text":
         flow = ['📠<b>消息推送</b>','']
         flow.append(f"🧾<b>消息内容</b>：{data['content']}")
+
+        result, autoreply = getKey(data["content"])
+        if result is True:
+            flow.append("")
+            flow.append(f"💡<b>自动回复</b>：{autoreply}")
+        elif openai is not None:
+            response = openai.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": payload},
+                    {"role": "user", "content": data["content"]}
+                ]
+            )
+            autoreply = response.choices[0].message.content
+            flow.append("")
+            flow.append(f"💡<b>自动回复</b>：{autoreply}")
+        
+        if autoreply is not None:
+            query = {
+                "type": "text",
+                "content": autoreply,
+                "from": "operator",
+                "origin": "chat",
+                "user": {
+                    "nickname": '智能客服',
+                    "avatar": 'https://img.ixintu.com/download/jpg/20210125/8bff784c4e309db867d43785efde1daf_512_512.jpg'
+                }
+            }
+            client.website.send_message_in_conversation(websiteId, sessionId, query)
         await bot.send_message(
             groupId,
             '\n'.join(flow),
