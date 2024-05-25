@@ -5,11 +5,11 @@ import base64
 import socketio
 import requests
 from telegram.ext import ContextTypes
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 config = bot.config
 client = bot.client
 openai = bot.openai
+changeButton = bot.changeButton
 groupId = config["bot"]["groupId"]
 websiteId = config["crisp"]["website"]
 payload = config["openai"]["payload"]
@@ -42,6 +42,7 @@ def getMetas(sessionId):
         return '\n'.join(flow)
     return '无额外信息'
 
+
 async def createSession(data):
     bot = callbackContext.bot
     botData = callbackContext.bot_data
@@ -50,20 +51,25 @@ async def createSession(data):
 
     metas = getMetas(sessionId)
     if session is None:
+        enableAI = False if openai is None else True
         topic = await bot.create_forum_topic(
             groupId,data["user"]["nickname"])
         msg = await bot.send_message(
             groupId,
             metas,
-            message_thread_id=topic.message_thread_id
+            message_thread_id=topic.message_thread_id,
+            reply_markup=changeButton(sessionId,enableAI)
             )
         botData[sessionId] = {
             'topicId': topic.message_thread_id,
             'messageId': msg.message_id,
+            'enableAI': enableAI
         }
     else:
-        await bot.edit_message_text('加载中',groupId,session['messageId'])
-        await bot.edit_message_text(metas,groupId,session['messageId'])
+        try:
+            await bot.edit_message_text(metas,groupId,session['messageId'])
+        except Exception as error:
+            print(error)
 
 async def sendMessage(data):
     bot = callbackContext.bot
@@ -83,7 +89,7 @@ async def sendMessage(data):
         if result is True:
             flow.append("")
             flow.append(f"💡<b>自动回复</b>：{autoreply}")
-        elif openai is not None:
+        elif openai is not None and session["enableAI"] is True:
             response = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
