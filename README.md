@@ -1,7 +1,7 @@
 # Crisp Telegram Bot via Python
 
-一个简单的项目，让 Crisp 客服系统支持透过 Telegram Bot 来快速回复。
-使用反馈、功能定制可加群：[https://t.me/dyPythonBot](https://t.me/dyPythonBot)
+一个简单的项目，让 Crisp 客服系统支持透过 Telegram Bot 来快速回复。  
+使用反馈、功能定制可加群：[https://t.me/dyaogroup](https://t.me/dyaogroup)
 
 Python 版本需求 >= 3.9
 
