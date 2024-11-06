@@ -1,5 +1,7 @@
 # Crisp Telegram Bot via Python
 
+## 此项目已不再维护，请移步：https://ai.haruka.cloud
+
 一个简单的项目，让 Crisp 客服系统支持透过 Telegram Bot 来快速回复。  
 使用反馈、功能定制可加群：[https://t.me/dyaogroup](https://t.me/dyaogroup)
 
