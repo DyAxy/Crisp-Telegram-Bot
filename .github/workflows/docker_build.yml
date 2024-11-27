@@ -1,6 +1,7 @@
 name: Docker Image Build
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - "master"
@@ -32,13 +33,13 @@ jobs:
       - run: docker buildx inspect --bootstrap
 
       - name: Build image and push(py3.9)
-        run: docker buildx build -t moefaq/crisp-telegram-bot:latest -t moefaq/crisp-telegram-bot:py3.9 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.9/Dockerfile .
+        run: docker buildx build -t ${{ secrets.FAQ_DOCKERHUB_USERNAME }}/crisp-telegram-bot:latest -t ${{ secrets.FAQ_DOCKERHUB_USERNAME }}/crisp-telegram-bot:py3.9 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.9/Dockerfile .
 
       - name: Build image and push(py3.10)
-        run: docker buildx build -t moefaq/crisp-telegram-bot:py3.10 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.10/Dockerfile .
+        run: docker buildx build -t ${{ secrets.FAQ_DOCKERHUB_USERNAME }}/crisp-telegram-bot:py3.10 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.10/Dockerfile .
 
       - name: Build image and push(py3.11)
-        run: docker buildx build -t moefaq/crisp-telegram-bot:py3.11 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.11/Dockerfile .
+        run: docker buildx build -t ${{ secrets.FAQ_DOCKERHUB_USERNAME }}/crisp-telegram-bot:py3.11 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.11/Dockerfile .
 
       - name: Build image and push(py3.12)
-        run: docker buildx build -t moefaq/crisp-telegram-bot:py3.12 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.12/Dockerfile .
+        run: docker buildx build -t ${{ secrets.FAQ_DOCKERHUB_USERNAME }}/crisp-telegram-bot:py3.12 --platform linux/amd64,linux/arm64 --progress plain --push -f dockerfiles/py3.12/Dockerfile .
