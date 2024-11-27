@@ -10,6 +10,9 @@ crisp:
   key:
   # 网站 ID
   website:
+easyimages:
+  apiUrl: "http://127.0.0.1/api/index.php"
+  apiToken: "token"
 autoreply:
   # 自动关键词回复，你可以复制成多行，每个关键词用 `|` 隔开即可，在 `:` 后输入自动回复内容
   "在吗|你好": "欢迎使用客服系统，请等待客服回复你~"
