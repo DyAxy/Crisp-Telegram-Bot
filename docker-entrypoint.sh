@@ -22,6 +22,9 @@ crisp:
   id: ${CRISP_ID}
   key: ${CRISP_KEY}
   website: ${CRISP_WEBSITE}
+easyimages:
+  apiUrl: ${EasyImages_apiUrl}
+  apiToken: ${EasyImages_apiToken}
 autoreply:
 ${AUTOREPLY}
 openai:
