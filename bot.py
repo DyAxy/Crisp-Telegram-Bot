@@ -2,6 +2,7 @@
 import os
 import yaml
 import logging
+import requests
 
 from openai import OpenAI
 from crisp_api import Crisp
@@ -80,6 +81,93 @@ async def onReply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             )
             return
 
+# EasyImages Config
+EASYIMAGES_API_URL = config.get('easyimages', {}).get('apiUrl', '')
+EASYIMAGES_API_TOKEN = config.get('easyimages', {}).get('apiToken', '')
+
+async def handleImage(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.effective_message
+
+    if msg.photo:
+        file_id = msg.photo[-1].file_id
+    elif msg.document and msg.document.mime_type.startswith('image/'):
+        file_id = msg.document.file_id
+    else:
+        await msg.reply_text("请发送图片文件。")
+        return
+
+    try:
+        # 获取文件下载 URL
+        file = await context.bot.get_file(file_id)
+        file_url = file.file_path
+
+        # 上传图片到 EasyImages
+        uploaded_url = upload_image_to_easyimages(file_url)
+
+        # 生成 Markdown 格式的链接
+        markdown_link = f"![Image]({uploaded_url})"
+
+        # 查找对应的 Crisp 会话 ID
+        session_id = get_target_session_id(context, msg.message_thread_id)
+        if session_id:
+            # 将 Markdown 链接推送给客户
+            send_markdown_to_client(session_id, markdown_link)
+            await msg.reply_text("图片已成功发送给客户！")
+        else:
+            await msg.reply_text("未找到对应的 Crisp 会话，无法发送给客户。")
+
+    except Exception as e:
+        await msg.reply_text("图片上传失败，请稍后重试。")
+        logging.error(f"图片上传错误: {e}")
+
+def upload_image_to_easyimages(file_url):
+    try:
+        response = requests.get(file_url, stream=True)
+        response.raise_for_status()
+
+        files = {
+            'image': ('image.jpg', response.raw, 'image/jpeg'),
+            'token': (None, EASYIMAGES_API_TOKEN)
+        }
+        res = requests.post(EASYIMAGES_API_URL, files=files)
+        res_data = res.json()
+
+        if res_data.get("result") == "success":
+            return res_data["url"]
+        else:
+            raise Exception(f"Image upload failed: {res_data}")
+    except Exception as e:
+        logging.error(f"Error uploading image: {e}")
+        raise
+
+def get_target_session_id(context, thread_id):
+    for session_id, session_data in context.bot_data.items():
+        if session_data.get('topicId') == thread_id:
+            return session_id
+    return None
+
+def send_markdown_to_client(session_id, markdown_link):
+    try:
+        # 将 Markdown 图片链接作为纯文本发送
+        query = {
+            "type": "text",
+            "content": markdown_link,  # 将图片链接当做普通文本
+            "from": "operator",
+            "origin": "chat",
+            "user": {
+                "nickname": "人工客服",
+                "avatar": "https://bpic.51yuansu.com/pic3/cover/03/47/92/65e3b3b1eb909_800.jpg"
+            }
+        }
+        client.website.send_message_in_conversation(
+            config['crisp']['website'],
+            session_id,
+            query
+        )
+        logging.info(f"图片链接已成功发送至 Crisp 会话 {session_id}")
+    except Exception as e:
+        logging.error(f"发送图片链接到 Crisp 失败: {e}")
+        raise
 
 async def onChange(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
@@ -104,6 +192,7 @@ def main():
         if os.getenv('RUNNER_NAME') is not None:
             return
         app.add_handler(MessageHandler(filters.TEXT, onReply))
+        app.add_handler(MessageHandler(filters.PHOTO | filters.Document.IMAGE, handleImage))
         app.add_handler(CallbackQueryHandler(onChange))
         app.job_queue.run_once(handler.exec,5,name='RTM')
         app.run_polling(drop_pending_updates=True)
